@@ -1,0 +1,22 @@
+---
+workspace: /usr/local/src
+
+# If protobuf_install_from_source is set to false, these two variables define whether
+# to use an additional repo for the package installation, and which protobuf packages
+# will be installed.
+protobuf_packages:
+  - protobuf-compiler
+
+# If set to TRUE, protobuf will be installed from source, using the version set with
+# the 'protobuf_version' variable instead of using a package.
+protobuf_install_from_source: false
+protobuf_install_path: "/usr"
+protobuf_version: "2.6.1"
+protobuf_checksum: "sha256:dbbd7bdd2381633995404de65a945ff1a7610b0da14593051b4738c90c6dd164"
+
+# If protobuf is already installed at and older version, force a new source build.
+# Only applies if protobuf_install_from_source is `true`.
+protobuf_install_from_source_force_update: false
+
+# Leave this at it's default.
+protobuf_reinstall_from_source: false

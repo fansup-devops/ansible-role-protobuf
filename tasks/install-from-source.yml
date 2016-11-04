@@ -1,0 +1,56 @@
+---
+- name: Ensure protobuf's dependencies are installed (Debian).
+  apt: "pkg={{ item }} state=installed"
+  with_items:
+    - gcc
+    - make
+    - libc6-dev
+  when: ansible_os_family == 'Debian'
+
+- name: Get installed version
+  shell: "protoc --version"
+  changed_when: false
+  failed_when: false
+  register: protobuf_installed_version
+
+- name: Force protobuf install if the version numbers do not match
+  set_fact:
+    protobuf_reinstall_from_source: true
+  when: 'protobuf_install_from_source_force_update and (protobuf_installed_version|success and (protobuf_installed_version.stdout | regex_replace("^.*?([0-9\.]+)$", "\\1") | version_compare(protobuf_version, operator="!=")))'
+
+- name: Download protobuf.
+  get_url:
+    url: "https://github.com/google/protobuf/releases/download/v{{ protobuf_version }}/protobuf-{{ protobuf_version }}.tar.gz"
+    dest: "{{ workspace }}/protobuf-{{ protobuf_version }}.tar.gz"
+    checksum: "{{ protobuf_checksum }}"
+  when: protobuf_installed_version|failed or protobuf_reinstall_from_source
+
+- name: Expand protobuf archive.
+  unarchive:
+    src: "{{ workspace }}/protobuf-{{ protobuf_version }}.tar.gz"
+    dest: "{{ workspace }}"
+    creates: "{{ workspace }}/protobuf-{{ protobuf_version }}/README.md"
+    copy: no
+  when: protobuf_installed_version|failed or protobuf_reinstall_from_source
+
+- name: Configure protobuf.
+  command: >
+    ./configure --prefix={{ protobuf_install_path }}
+    chdir={{ workspace }}/protobuf-{{ protobuf_version }}
+  when: protobuf_installed_version|failed or protobuf_reinstall_from_source
+  become: yes
+
+- name: Build protobuf.
+  command: >
+    make {{ item }}
+    chdir={{ workspace }}/protobuf-{{ protobuf_version }}
+  with_items:
+    - all
+    - install
+  when: protobuf_installed_version|failed or protobuf_reinstall_from_source
+  become: yes
+
+- name: Run ldconfig
+  shell: ldconfig
+  when: protobuf_installed_version|failed or protobuf_reinstall_from_source
+  become: yes
